@@ -1,14 +1,38 @@
 # Stat blockchain'a
+MINING_REWARD = 10
+
 genesis_block = {'previous_hash': '',
                  'index': 0,
                  'transactions': []}
 blockchain = [genesis_block]
 open_transactions = []
 owner = 'me'
+participants = {'me'}
 
 
 def hash_block(block):
     return '-'.join([str(block[key]) for key in block])
+
+
+def get_balance(participant):
+    sender = [[tx["amount"] for tx in block['transactions']
+               if tx['sender'] == participant]for block in blockchain]
+
+    open_sender = [tx['amount']
+                   for tx in open_transactions if tx['sender'] == participant]
+    sender.append(open_sender)
+    amt_sent = 0
+    for tx in sender:
+        if len(tx) > 0:
+            amt_sent += tx[0]
+    recepient = [[tx["amount"] for tx in block['transactions']
+                  if tx['recipient'] == participant]for block in blockchain]
+    amt_recieved = 0
+    for tx in recepient:
+        if len(tx) > 0:
+            amt_recieved += tx[0]
+
+    return amt_recieved - amt_sent
 
 
 def get_last_blockchain_val():
@@ -17,6 +41,14 @@ def get_last_blockchain_val():
         return None
     else:
         return blockchain[-1]
+
+
+def verify_transaction(transaction):
+    sender_balance = get_balance(transaction['sender'])
+    if sender_balance >= transaction['amount']:
+        return True
+    else:
+        return False
 
 
 def add_transaction(recipient, sender=owner, amount=1.0):
@@ -29,18 +61,30 @@ def add_transaction(recipient, sender=owner, amount=1.0):
         :amount: wartość transakcji (domyślnie 1.0)
     """
     transaction = {'sender': sender, 'recipient': recipient, 'amount': amount}
-    open_transactions.append(transaction)
+    if verify_transaction(transaction):
+        open_transactions.append(transaction)
+        participants.add(sender)
+        participants.add(recipient)
+        return True
+    return False
 
 
 def mine_block():
     """Tworzy natępny blok w blockchain"""
     last_block = blockchain[-1]
     hashed_block = hash_block(last_block)  # tutaj optymalizacja
-
+    reward_transaction = {
+        'sender': 'MINING',
+        'recipient': owner,
+        'amount': MINING_REWARD
+    }
+    copied_transaction = open_transactions[:]
+    copied_transaction.append(reward_transaction)
     block = {'previous_hash': hashed_block,
              'index': len(blockchain),
-             'transactions': open_transactions}
+             'transactions': copied_transaction}
     blockchain.append(block)
+    return True
 
 
 def get_transaction_val():
@@ -71,21 +115,35 @@ def verify_chain():
     return True
 
 
+def verify_transactions():
+    return all([verify_transaction(tx) for tx in open_transactions])
+
 wait_for_input = True
 
 
 while wait_for_input:
     print("Wybierz akcje ")
-    print('1 Nowa wartość transakcji \n2 Mine nowy blok \n3 Wyświetl bloki blockchaina \nh Aby zmodyfikować \nq Aby wyjść')
+    print('1 Nowa wartość transakcji \n2 Mine nowy blok \n3 Wyświetl bloki blockchaina \n4 Podaj użytkowników \n5 Sprawdź ważność transakcji \nh Aby zmodyfikować \nq Aby wyjść')
     user_choice = get_user_choice()
     if user_choice == '1':
         recepient, amount = get_transaction_val()
-        add_transaction(recepient, amount=amount)
+        if add_transaction(recepient, amount=amount):
+            print('Dodano transakcje')
+        else:
+            print('Niepowodznie w dodawaniu transakcji')
         # print(open_transactions)
     elif user_choice == '2':
-        mine_block()
+        if mine_block():
+            open_transactions = []
     elif user_choice == '3':
         print_blockchain_elements()
+    elif user_choice == '4':
+        print(participants)
+    elif user_choice == '5':
+        if verify_transactions():
+            print("Transakcje są poprawne")
+        else:
+            print("Transakcje błędne")
     elif user_choice == 'q':
         wait_for_input = False
     elif user_choice == 'h':
@@ -100,6 +158,6 @@ while wait_for_input:
         print("Blockchain został zmanipulowany!")
         break
 
-    print("Zarejestrowano wybór")
+    print(get_balance('me'))
 else:
     print("Użytkownik wyszedł")
