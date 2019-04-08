@@ -39,17 +39,39 @@ def print_blockchain_elements():
     for block in blockchain:
         print(block)
 
+def verify_chain():
+    block_index = 0
+    is_valid = True
+    for block in blockchain:
+        if block_index == 0:
+            block_index += 1
+            continue
+        elif block[0] == blockchain[block_index - 1]:
+            is_valid = True
+        else:
+            is_valid = False
+            break
+        block_index += 1
+    return is_valid
 
 while True:
     print("Wybierz akcje ")
-    print('1 Nowa wartość transakcji \n2 Wyświetl bloki blockchaina \n q Aby wyjść')
+    print('1 Nowa wartość transakcji \n2 Wyświetl bloki blockchaina \nh Aby zmodyfikować \nq Aby wyjść')
     user_choice = get_user_choice()
     if user_choice == '1':
-        add_transaction(transaction_amount=get_transaction_val())
+        add_transaction(get_transaction_val(), get_last_blockchain_val())
     elif user_choice == '2':
         print_blockchain_elements()
     elif user_choice == 'q':
         break
+    elif user_choice == 'h':
+        if len(blockchain) >= 1:
+            blockchain[0]=[2]
     else:
         print('Niepoprawna cyfra ')
+
+    if not verify_chain():
+        print("Blockchain został zmanipulowany!")
+        break
+
     print("Zarejestrowano wybór")
