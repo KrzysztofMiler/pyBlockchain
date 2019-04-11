@@ -1,3 +1,4 @@
+import functools
 # Stat blockchain'a
 MINING_REWARD = 10
 
@@ -21,16 +22,13 @@ def get_balance(participant):
     open_sender = [tx['amount']
                    for tx in open_transactions if tx['sender'] == participant]
     sender.append(open_sender)
-    amt_sent = 0
-    for tx in sender:
-        if len(tx) > 0:
-            amt_sent += tx[0]
+    amt_sent = functools.reduce(
+        lambda suma, amt: suma + sum(amt) if len(amt) > 0 else suma + 0, sender, 0)
+
     recepient = [[tx["amount"] for tx in block['transactions']
                   if tx['recipient'] == participant]for block in blockchain]
-    amt_recieved = 0
-    for tx in recepient:
-        if len(tx) > 0:
-            amt_recieved += tx[0]
+    amt_recieved = functools.reduce(
+        lambda suma, amt: suma + sum(amt) if len(amt) > 0 else suma + 0, recepient, 0)
 
     return amt_recieved - amt_sent
 
@@ -118,6 +116,7 @@ def verify_chain():
 def verify_transactions():
     return all([verify_transaction(tx) for tx in open_transactions])
 
+
 wait_for_input = True
 
 
@@ -158,6 +157,6 @@ while wait_for_input:
         print("Blockchain został zmanipulowany!")
         break
 
-    print(get_balance('me'))
+    print("Bilans konta {} : {:6.2f}".format('Ja', get_balance('me')))
 else:
     print("Użytkownik wyszedł")
