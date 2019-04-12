@@ -1,7 +1,10 @@
 import functools
 import hashlib as hl
-import json
 from collections import OrderedDict
+import json
+import pickle
+from hash_util import hash_block, hash_string_256
+
 # Stat blockchain'a
 MINING_REWARD = 10
 
@@ -15,9 +18,50 @@ owner = 'me'
 participants = {'me'}
 
 
+def load_data():
+    with open('blockchain.txt', mode='r') as f:
+        # file_content = pickle.loads(f.read())
+        file_content = f.readlines()
+        global blockchain
+        global open_transactions
+        # blockchain = file_content['chain']
+        # open_transactions = file_content['ot']
+        blockchain = json.loads(file_content[0][:-1])
+        updated_blockchain = []
+        for block in blockchain:
+            updated_block = {'previous_hash': block['previous_hash'],
+                             'index': block['index'],
+                             'transactions': [OrderedDict(
+                                 [('sender', tx['sender']), ('recipient', tx['recipient']), ('amount', tx['amount'])]) for tx in block['transactions']],
+                             'proof': block['proof']}
+            updated_blockchain.append(updated_block)
+        blockchain = updated_blockchain
+        open_transactions = json.loads(file_content[1])
+
+        updated_transactions = []
+        for tx in open_transactions:
+            updated_transaction = OrderedDict(
+                [('sender', tx['sender']), ('recipient', tx['recipient']), ('amount', tx['amount'])])
+            updated_transactions.append(updated_transaction)
+        open_transactions = updated_transactions
+
+load_data()
+
+
+def save_data():
+    with open('blockchain.txt', mode='w') as f:
+        f.write(json.dumps(blockchain))
+        f.write('\n')
+        f.write(json.dumps(open_transactions))
+        # save_data ={
+        #     'chain':blockchain,
+        #     'ot':open_transactions
+        # }
+        # f.write(pickle.dumps(save_data))
+
 def valid_proof(transactions, last_hash, proof):
     guess = (str(transactions) + str(last_hash) + str(proof)).encode()
-    guess_hash = hl.sha256(guess).hexdigest()
+    guess_hash = hash_string_256(guess)
     print(guess_hash)
     return guess_hash[0:2] == '00'  # nasz warunek na poprawy hash
 
@@ -29,11 +73,6 @@ def proof_of_work():
     while not valid_proof(open_transactions, last_hash, proof):
         proof += 1
     return proof
-
-
-def hash_block(block):
-    return hl.sha256(json.dumps(block,sort_keys=True).encode()).hexdigest()
-# json.dumps tworzy string z bloku i jeszcze trzeba dać .encode() aby ztranslatować na binarny i potem.hexdigest() na str
 
 
 def get_balance(participant):
@@ -80,11 +119,13 @@ def add_transaction(recipient, sender=owner, amount=1.0):
         :amount: wartość transakcji (domyślnie 1.0)
     """
     #transaction = {'sender': sender, 'recipient': recipient, 'amount': amount}
-    transaction = OrderedDict([('sener',sender),('recipient', recipient), ('amount', amount)])
+    transaction = OrderedDict(
+        [('sender', sender), ('recipient', recipient), ('amount', amount)])
     if verify_transaction(transaction):
         open_transactions.append(transaction)
         participants.add(sender)
         participants.add(recipient)
+        save_data()
         return True
     return False
 
@@ -100,7 +141,8 @@ def mine_block():
     #     'recipient': owner,
     #     'amount': MINING_REWARD
     # }
-    reward_transaction = OrderedDict([('sender', 'MINING'),('recipient', owner),('amount', MINING_REWARD)])
+    reward_transaction = OrderedDict(
+        [('sender', 'MINING'), ('recipient', owner), ('amount', MINING_REWARD)])
 
     copied_transaction = open_transactions[:]
     copied_transaction.append(reward_transaction)
@@ -164,6 +206,7 @@ while wait_for_input:
     elif user_choice == '2':
         if mine_block():
             open_transactions = []
+            save_data()
     elif user_choice == '3':
         print_blockchain_elements()
     elif user_choice == '4':
