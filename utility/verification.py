@@ -1,4 +1,6 @@
-from hash_util import hash_block, hash_string_256
+"""Dodaje możliwość weryfikacji blockchaina"""
+
+from utility.hash_util import hash_block, hash_string_256
 
 class Verification:
     @classmethod

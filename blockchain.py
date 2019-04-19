@@ -4,8 +4,9 @@ import json
 import pickle
 from block import Block
 from transaction import Transaction
-from verification import Verification
-from hash_util import hash_block, hash_string_256
+from utility.hash_util import hash_block
+from utility.verification import Verification
+
 # Stat blockchain'a
 MINING_REWARD = 10
 
@@ -133,6 +134,8 @@ class Blockchain:
             :recipient: odbierający transakcje
             :amount: wartość transakcji (domyślnie 1.0)
         """
+        if self.hosting_node == None:
+            return False
         transaction = Transaction(sender, recipient, amount)
         # transaction = OrderedDict(
         #     [('sender', sender), ('recipient', recipient), ('amount', amount)])
@@ -146,6 +149,8 @@ class Blockchain:
 
     def mine_block(self):
         """Tworzy natępny blok w blockchain"""
+        if self.hosting_node == None:
+            return False
         last_block = self.__chain[-1]
         hashed_block = hash_block(last_block)  # tutaj optymalizacja
         proof = self.proof_of_work()

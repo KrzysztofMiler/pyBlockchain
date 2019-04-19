@@ -1,13 +1,14 @@
 from blockchain import Blockchain
 from uuid import uuid4
-from verification import Verification
+from utility.verification import Verification
+from wallet import Wallet
 
 class Node:
 
     def __init__(self):
-        #self.id = str(uuid4())
-        self.id = 'JA'#temp, jak będzie portfel to będzie j.w.
-        self.blockchain = Blockchain(self.id)
+        #self.wallet.public_key = str(uuid4())
+        self.wallet = Wallet()#temp, jak będzie portfel to będzie j.w.
+        self.blockchain = None
         
 
     def listen_for_input(self):
@@ -15,17 +16,18 @@ class Node:
 
         while wait_for_input:
             print("Wybierz akcje ")
-            print('1 Nowa wartość transakcji \n2 Mine nowy blok \n3 Wyświetl bloki blockchaina \n4 Sprawdź ważność transakcji \nq Aby wyjść')
+            print('1 Nowa wartość transakcji \n2 Mine nowy blok \n3 Wyświetl bloki blockchaina \n4 Sprawdź ważność transakcji \n5 Stwórz portfel \n6 Wczytaj portfel \nq Aby wyjść')
             user_choice = self.get_user_choice()
             if user_choice == '1':
                 recipient, amount = self.get_transaction_val()
-                if self.blockchain.add_transaction(recipient,self.id, amount=amount):
+                if self.blockchain.add_transaction(recipient,self.wallet.public_key, amount=amount):
                     print('Dodano transakcje')
                 else:
                     print('Niepowodznie w dodawaniu transakcji')
                 # print(open_transactions)
             elif user_choice == '2':
-                self.blockchain.mine_block()                    
+                if not self.blockchain.mine_block():
+                    print('Niepowodzenie miningu, sprawdź czy posiadasz portfel')                    
             elif user_choice == '3':
                 self.print_blockchain_elements()
             elif user_choice == '4':                
@@ -33,6 +35,11 @@ class Node:
                     print("Transakcje są poprawne")
                 else:
                     print("Transakcje błędne")
+            elif user_choice == '5':
+                self.wallet.create_keys()
+                self.blockchain = Blockchain(self.wallet.public_key)
+            elif user_choice == '6':
+                pass
             elif user_choice == 'q':
                 wait_for_input = False
             else:
@@ -41,7 +48,7 @@ class Node:
                 print("Blockchain został zmanipulowany!")
                 break
 
-            print("Bilans konta {} : {:6.2f}".format(self.id, self.blockchain.get_balance()))
+            print("Bilans konta {} : {:6.2f}".format(self.wallet.public_key, self.blockchain.get_balance()))
         else:
             print("Użytkownik wyszedł")
 
@@ -60,5 +67,8 @@ class Node:
         """Pobiera od użytkownika wartość ,wypisuje na ekranie również 'Twój wybór '"""
         return input('Twój wybór ')
 
-node = Node()
-node.listen_for_input()
+if __name__=='__main__':
+    node = Node()
+    node.listen_for_input()
+
+#print(__name__)

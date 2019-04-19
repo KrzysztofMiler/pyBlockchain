@@ -2,6 +2,7 @@ import hashlib as hl
 import json
 
 
+
 def hash_string_256(string):
     return hl.sha256(string).hexdigest()
 
