@@ -96,6 +96,8 @@ class Blockchain:
         return proof
 
     def get_balance(self):
+        if self.hosting_node == None:
+            return None
         participant = self.hosting_node
         sender = [[tx.amount for tx in block.transactions
                    if tx.sender == participant]for block in self.__chain]
@@ -144,29 +146,22 @@ class Blockchain:
     def mine_block(self):
         """Tworzy natępny blok w blockchain"""
         if self.hosting_node == None:
-            return False
+            return None
         last_block = self.__chain[-1]
         hashed_block = hash_block(last_block)  # tutaj optymalizacja
         proof = self.proof_of_work()
-
-        # reward_transaction = {
-        #     'sender': 'MINING',
-        #     'recipient': owner,
-        #     'amount': MINING_REWARD
-        # }
+        
         reward_transaction = Transaction(
             'MINING', self.hosting_node,"", MINING_REWARD)
-        # reward_transaction = OrderedDict(
-        #     [('sender', 'MINING'), ('recipient', owner), ('amount', MINING_REWARD)])
-
+        
         copied_transaction = self.__open_transactions[:]
         for tx in copied_transaction:
            if not Wallet.verify_transactions(tx):
-               return False
+               return None
         copied_transaction.append(reward_transaction)
         block = Block(len(self.__chain), hashed_block,
                       copied_transaction, proof)
         self.__chain.append(block)
         self.__open_transactions = []
         self.save_data()
-        return True
+        return block

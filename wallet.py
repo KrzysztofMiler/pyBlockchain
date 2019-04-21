@@ -28,8 +28,10 @@ class Wallet:
                     f.write(self.public_key)
                     f.write('\n')
                     f.write(self.private_key)
+                return True
             except(IOError, IndexError):
                 print('Niepowodzenie zapisywania portfela')
+                return False
 
     def load_keys(self):
         try:
@@ -39,8 +41,10 @@ class Wallet:
                 private_key = keys[1]
                 self.public_key = public_key
                 self.private_key = private_key
+                return True
         except(IOError, IndexError):
             print('Niepowodzenie wczytywania portfela')
+        return False
 
     def sign_transaction(self, sender, recipient, amount):
         signer = PKCS1_v1_5.new(RSA.importKey(binascii.unhexlify(self.private_key)))
